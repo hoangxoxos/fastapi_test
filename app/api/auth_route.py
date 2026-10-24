@@ -59,6 +59,7 @@ async def login(
 
 
 @router.post("/refresh", response_model=TokenResponse, status_code=status.HTTP_200_OK)
+@limiter.limit("5/minute")
 async def refresh(
     request: Request,
     response: Response,
@@ -74,6 +75,30 @@ async def refresh(
     return TokenResponse(
         access_token=result["access_token"], expires_in=result["access_expires_in"]
     )
+
+
+@router.post("/logout")
+async def logout(
+    request: Request,
+    response: Response,
+    current_user: CurrentUser,
+    service: Annotated[AuthService, Depends(get_auth_service)],
+):
+    token = request.cookies.get("refresh_token")
+
+    await service.logout(token)
+    _clear_refresh_cookie(response)
+
+
+@router.post("/logout_all")
+async def logout_all(
+    request: Request,
+    response: Response,
+    current_user: CurrentUser,
+    service: Annotated[AuthService, Depends(get_auth_service)],
+):
+    await service.logout_all(current_user.id)
+    _clear_refresh_cookie(response)
 
 
 @router.get("/me", response_model=UserReadPublic, status_code=status.HTTP_200_OK)

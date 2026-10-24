@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from app.core.config import settings
@@ -124,3 +125,10 @@ class AuthService:
             "refresh_token": refresh_token,
             "refresh_expires_in": refresh_expires_in,
         }
+
+    async def logout(self, token: str):
+        token_hash = hash_token(token)
+        await self.auth_repo.revoke(token_hash)
+
+    async def logout_all(self, user_id: uuid.UUID):
+        await self.auth_repo.revoke_all(user_id)
